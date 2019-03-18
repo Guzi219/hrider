@@ -1,8 +1,8 @@
 package hrider.converters;
 
+import hrider.util.BytesUtil;
 import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.*;
 
@@ -30,18 +30,18 @@ public class RegionInfoConverter extends JsonConverter {
 
     private static class RegionInfoWrapper {
 
-      //  private String  tableName;
+        //private String  tableName;
         private TableName tableName;
-        private String  startKey;
-        private String  endKey;
+        private String startKey;
+        private String endKey;
         private boolean offLine;
         private boolean split;
-        private long    regionID;
+        private long regionID;
 
         RegionInfoWrapper(HRegionInfo info) {
             tableName = info.getTable();
-            startKey = Bytes.toStringBinary(info.getStartKey());
-            endKey = Bytes.toStringBinary(info.getEndKey());
+            startKey = BytesUtil.toString(info.getStartKey());
+            endKey = BytesUtil.toString(info.getEndKey());
             offLine = info.isOffline();
             split = info.isSplit();
             regionID = info.getRegionId();
@@ -49,7 +49,7 @@ public class RegionInfoConverter extends JsonConverter {
 
         public HRegionInfo toHRegion() {
             HRegionInfo info = new HRegionInfo(
-                    tableName, Bytes.toBytesBinary(startKey), Bytes.toBytesBinary(endKey), split, regionID);
+                    tableName, BytesUtil.toBytes(startKey), BytesUtil.toBytes(endKey), split, regionID);
 
             info.setOffline(offLine);
             return info;
@@ -74,13 +74,12 @@ public class RegionInfoConverter extends JsonConverter {
                 info.write(output);
 
                 return stream.toByteArray();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 logger.error(e, "Failed to convert HRegionInfo to byte array.");
             }
         }
 
-        return Bytes.toBytes(value);
+        return BytesUtil.toBytes(value);
     }
 
     @Override
@@ -94,10 +93,9 @@ public class RegionInfoConverter extends JsonConverter {
             info.readFields(new DataInputStream(new ByteArrayInputStream(value)));
 
             return toJson(new RegionInfoWrapper(info));
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             logger.error(e, "Failed to convert byte array to HRegionInfo.");
-            return Bytes.toString(value);
+            return BytesUtil.toString(value);
         }
     }
 }

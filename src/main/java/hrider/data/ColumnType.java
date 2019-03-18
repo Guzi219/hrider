@@ -30,19 +30,20 @@ import java.util.Collection;
 public class ColumnType implements Serializable {
 
     //region Constants
-    public final static ColumnType String       = new ColumnType("String");
+    public final static ColumnType String = new ColumnType("String");
+    public final static ColumnType StringGBK = new ColumnType("StringGBK");
     public final static ColumnType BinaryString = new ColumnType("BinaryString");
-    public final static ColumnType Boolean      = new ColumnType("Boolean");
-    public final static ColumnType Integer      = new ColumnType("Integer");
-    public final static ColumnType DateAsLong   = new ColumnType("DateAsLong");
+    public final static ColumnType Boolean = new ColumnType("Boolean");
+    public final static ColumnType Integer = new ColumnType("Integer");
+    public final static ColumnType DateAsLong = new ColumnType("DateAsLong");
     public final static ColumnType DateAsString = new ColumnType("DateAsString");
-    public final static ColumnType Double       = new ColumnType("Double");
-    public final static ColumnType Float        = new ColumnType("Float");
-    public final static ColumnType Long         = new ColumnType("Long");
-    public final static ColumnType Short        = new ColumnType("Short");
-    public final static ColumnType Json         = new ColumnType("Json");
-    public final static ColumnType Xml          = new ColumnType("Xml");
-    public final static ColumnType RegionInfo   = new ColumnType("RegionInfo");
+    public final static ColumnType Double = new ColumnType("Double");
+    public final static ColumnType Float = new ColumnType("Float");
+    public final static ColumnType Long = new ColumnType("Long");
+    public final static ColumnType Short = new ColumnType("Short");
+    public final static ColumnType Json = new ColumnType("Json");
+    public final static ColumnType Xml = new ColumnType("Xml");
+    public final static ColumnType RegionInfo = new ColumnType("RegionInfo");
 
     private static final long serialVersionUID = -5311385557088499851L;
     //endregion
@@ -188,7 +189,7 @@ public class ColumnType implements Serializable {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof ColumnType) {
-            return this.converter.equals(((ColumnType)obj).converter);
+            return this.converter.equals(((ColumnType) obj).converter);
         }
         return false;
     }

@@ -7,19 +7,19 @@ import hrider.data.DataCell;
 import hrider.data.DataRow;
 import hrider.data.TableDescriptor;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.*;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.io.encoding.DataBlockEncoding;
-import org.apache.hadoop.hbase.io.hfile.CacheConfig;
-import org.apache.hadoop.hbase.io.hfile.HFile;
-import org.apache.hadoop.hbase.regionserver.StoreFile;
-import org.apache.hadoop.hbase.regionserver.StoreFileScanner;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+
 
 /**
  * Copyright (C) 2012 NICE Systems ltd.
@@ -47,19 +47,19 @@ public class Connection {
     /**
      * The name of the muster server where the hbase is located.
      */
-    private String                    serverName;
+    private String serverName;
     /**
      * A reference to the hbase administration class.
      */
-    private HBaseAdmin                hbaseAdmin;
+    private HBaseAdmin hbaseAdmin;
     /**
      * A reference to the tables factory class.
      */
-    private TableFactory              factory;
+    private TableFactory factory;
     /**
      * A configuration used to connect to hbase.
      */
-    private ConnectionDetails         connectionDetails;
+    private ConnectionDetails connectionDetails;
     /**
      * A list of listeners.
      */
@@ -84,8 +84,7 @@ public class Connection {
 
             this.factory = new TableFactory(config);
             this.hbaseAdmin = new HBaseAdmin(config);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new IOException("Failed to access hbase administration.", e);
         }
     }
@@ -230,8 +229,7 @@ public class Connection {
             for (HbaseActionListener listener : this.listeners) {
                 listener.tableOperation(tableDescriptor.getName(), "modified");
             }
-        }
-        else {
+        } else {
             this.hbaseAdmin.createTable(tableDescriptor.toDescriptor(), splitKeys);
 
             for (HbaseActionListener listener : this.listeners) {
@@ -348,8 +346,7 @@ public class Connection {
             if (!puts.isEmpty()) {
                 target.put(puts);
             }
-        }
-        finally {
+        } finally {
             scanner.close();
         }
     }
@@ -362,14 +359,13 @@ public class Connection {
      * @throws IOException Error accessing hbase.
      */
     public void saveTable(String tableName, String path) throws IOException {
-        FileSystem fs = FileSystem.getLocal(this.getConfiguration());
+        /*FileSystem fs = FileSystem.getLocal(this.getConfiguration());
         HTable table = this.factory.get(tableName);
 
         Configuration cacheConfig = new Configuration(this.getConfiguration());
         cacheConfig.setFloat(HConstants.HFILE_BLOCK_CACHE_SIZE_KEY, 0.0f);
 
-        StoreFile.Writer writer = new StoreFile.WriterBuilder(
-            this.getConfiguration(), new CacheConfig(cacheConfig), fs).withFilePath(new Path(path)).build();
+        StoreFile.Writer writer = new StoreFile.WriterBuilder(this.getConfiguration(), new CacheConfig(cacheConfig), fs, StoreFile.DEFAULT_BLOCKSIZE_SMALL).withFilePath(new Path(path)).build();
 
         ResultScanner scanner = null;
 
@@ -395,14 +391,13 @@ public class Connection {
                 }
             }
             while (isValid);
-        }
-        finally {
+        } finally {
             if (scanner != null) {
                 scanner.close();
             }
 
             writer.close();
-        }
+        }*/
     }
 
     /**
@@ -434,21 +429,21 @@ public class Connection {
      * @throws IOException Error accessing hbase.
      */
     public void loadTable(String tableName, String path) throws IOException, TableNotFoundException {
-        FileSystem fs = FileSystem.getLocal(this.getConfiguration());
+        /*FileSystem fs = FileSystem.getLocal(this.getConfiguration());
         HTable table = this.factory.get(tableName);
 
-        HTableDescriptor td = this.hbaseAdmin.getTableDescriptor(Bytes.toBytes(tableName));
+        HTableDescriptor td = this.hbaseAdmin.getTableDescriptor(TableName.valueOf(tableName));
 
         Collection<ColumnFamily> families = new HashSet<ColumnFamily>();
         for (HColumnDescriptor column : td.getColumnFamilies()) {
             families.add(new ColumnFamily(column));
         }
 
-        StoreFile.Reader reader = new StoreFile.Reader(fs, new Path(path), new CacheConfig(this.getConfiguration()), getConfiguration());
+        StoreFile.Reader reader = new StoreFile.Reader(fs, new Path(path), new CacheConfig(this.getConfiguration()), DataBlockEncoding.NONE);
 
         try {
             StoreFileScanner scanner = reader.getStoreFileScanner(false, false);
-         //   SchemaMetrics.configureGlobally(this.getConfiguration());
+            //   SchemaMetrics.configureGlobally(this.getConfiguration());
 
             // move to the first row.
             scanner.seek(new KeyValue(new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
@@ -514,10 +509,9 @@ public class Connection {
 
                 HTableUtil.bucketRsPut(table, puts);
             }
-        }
-        finally {
+        } finally {
             reader.close(false);
-        }
+        }*/
     }
 
     /**

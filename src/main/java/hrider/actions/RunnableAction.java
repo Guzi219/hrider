@@ -135,6 +135,7 @@ public class RunnableAction<R> implements Runnable {
             logger.info("Action '%s' completed.", this.name);
         }
         catch (Exception e) {
+            e.printStackTrace();
             this.isRunning = false;
 
             if (this.interrupted) {
