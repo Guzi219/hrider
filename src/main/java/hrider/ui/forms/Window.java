@@ -240,7 +240,8 @@ public class Window {
             "compare-versions", new Action<Object>() {
             @Override
             public Object run() throws Exception {
-                compareVersions();
+                //nothing to update
+                //compareVersions();
                 return null;
             }
         });
