@@ -2,6 +2,7 @@ package hrider.data;
 
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 
@@ -36,10 +37,11 @@ public class TableDescriptor implements Serializable, Cloneable {
     //region Variables
     private static final long serialVersionUID = 3044847453855547590L;
 
-    private String              name;
+    private String name;
+    private TableName tableName;
     private Map<String, String> metadata;
-    private List<ColumnFamily>  families;
-    private boolean             editable;
+    private List<ColumnFamily> families;
+    private boolean editable;
     //endregion
 
     //region Constructor
@@ -52,8 +54,15 @@ public class TableDescriptor implements Serializable, Cloneable {
         this.editable = true;
     }
 
+    public TableDescriptor(TableName tableName) {
+        this(new HTableDescriptor(tableName));
+
+        this.editable = true;
+    }
+
     public TableDescriptor(HTableDescriptor descriptor) {
         this.name = descriptor.getNameAsString();
+        this.tableName = descriptor.getTableName();
         this.families = new ArrayList<ColumnFamily>();
 
         for (HColumnDescriptor column : descriptor.getColumnFamilies()) {
@@ -63,6 +72,11 @@ public class TableDescriptor implements Serializable, Cloneable {
         loadMetadata(descriptor);
     }
     //endregion
+
+    //region Public Methods
+    public static Map<String, String> defaults() {
+        return new TableDescriptor("defaults").metadata;
+    }
 
     //region Public Properties
     public boolean isEditable() {
@@ -75,16 +89,12 @@ public class TableDescriptor implements Serializable, Cloneable {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public Map<String, String> getMetadata() {
-        return this.metadata;
+        this.tableName = TableName.valueOf(name);
     }
     //endregion
 
-    //region Public Methods
-    public static Map<String, String> defaults() {
-        return new TableDescriptor("defaults").metadata;
+    public Map<String, String> getMetadata() {
+        return this.metadata;
     }
 
     public void addFamily(ColumnFamily family) {
@@ -102,7 +112,7 @@ public class TableDescriptor implements Serializable, Cloneable {
     }
 
     public HTableDescriptor toDescriptor() {
-        HTableDescriptor descriptor = new HTableDescriptor(this.name);
+        HTableDescriptor descriptor = new HTableDescriptor(this.tableName);
         for (Map.Entry<String, String> entry : this.metadata.entrySet()) {
             descriptor.setValue(entry.getKey(), entry.getValue());
         }
@@ -145,7 +155,7 @@ public class TableDescriptor implements Serializable, Cloneable {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof TableDescriptor) {
-            return ((TableDescriptor)obj).name.equals(this.name);
+            return ((TableDescriptor) obj).name.equals(this.name);
         }
         return false;
     }

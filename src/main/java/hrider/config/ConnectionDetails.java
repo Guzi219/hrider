@@ -52,14 +52,14 @@ public class ConnectionDetails implements Serializable {
     //region Public Methods
     public boolean canConnect() {
         Boolean result = RunnableAction.runAndWait(
-            this.zookeeper.getHost(), new Action<Boolean>() {
+                this.zookeeper.getHost(), new Action<Boolean>() {
 
-            @Override
-            public Boolean run() throws IOException {
-                ConnectionManager.create(ConnectionDetails.this);
-                return true;
-            }
-        }, GlobalConfig.instance().getConnectionCheckTimeout());
+                    @Override
+                    public Boolean run() throws IOException {
+                        ConnectionManager.create(ConnectionDetails.this);
+                        return true;
+                    }
+                }, GlobalConfig.instance().getConnectionCheckTimeout());
 
         return result != null ? result : false;
     }
@@ -68,9 +68,16 @@ public class ConnectionDetails implements Serializable {
         Configuration config = HBaseConfiguration.create();
         config.set("hbase.zookeeper.quorum", this.zookeeper.getHost());
         config.set("hbase.zookeeper.property.clientPort", this.zookeeper.getPort());
-        config.set("hbase.client.retries.number", "3");
-        config.set("hbase.rpc.timeout","900000");
-        config.set("zookeeper.znode.parent","/hbase-unsecure");
+        config.set("hbase.client.retries.number", "5");
+        config.set("hbase.client.pause", "100");
+        config.set("hbase.rpc.timeout", "900000");
+        String znodeSecure = System.getProperty("zookeeper.znode.parent");
+        if (znodeSecure == null) {
+            config.set("zookeeper.znode.parent", "/hbase-unsecure");
+        } else {
+            // "/hbase-secure"
+            config.set("zookeeper.znode.parent", znodeSecure);
+        }
 
 //        config.set("hbase.security.authentication", "kerberos");
 //        config.set("hbase.rpc.engine", "org.apache.hadoop.hbase.ipc.SecureRpcEngine");
@@ -81,7 +88,7 @@ public class ConnectionDetails implements Serializable {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof ConnectionDetails) {
-            ConnectionDetails details = (ConnectionDetails)obj;
+            ConnectionDetails details = (ConnectionDetails) obj;
             return this.zookeeper.equals(details.zookeeper);
         }
         return false;

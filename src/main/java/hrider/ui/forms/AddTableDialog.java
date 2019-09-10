@@ -5,6 +5,7 @@ import com.intellij.uiDesigner.core.GridLayoutManager;
 import hrider.data.ColumnFamily;
 import hrider.data.TableDescriptor;
 import hrider.ui.design.JCellEditor;
+import org.apache.hadoop.hbase.TableName;
 
 import javax.swing.*;
 import javax.swing.event.*;
@@ -69,7 +70,7 @@ public class AddTableDialog extends JDialog {
         getRootPane().setDefaultButton(this.buttonOK);
 
         if (descriptor == null) {
-            this.tableDescriptor = new TableDescriptor(NEW_TABLE_NAME);
+            this.tableDescriptor = new TableDescriptor(TableName.valueOf(NEW_TABLE_NAME));
         }
         else {
             this.tableDescriptor = descriptor.clone();

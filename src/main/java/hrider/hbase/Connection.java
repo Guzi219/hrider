@@ -6,19 +6,14 @@ import hrider.data.ColumnFamily;
 import hrider.data.DataCell;
 import hrider.data.DataRow;
 import hrider.data.TableDescriptor;
+import hrider.io.Log;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.KeyValue;
-import org.apache.hadoop.hbase.TableNotFoundException;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -42,6 +37,7 @@ import java.util.List;
  *          This class represents a data access to the hbase tables.
  */
 public class Connection {
+    private static final Log logger = Log.getLogger(Connection.class);
 
     //region Variables
     /**
@@ -52,6 +48,8 @@ public class Connection {
      * A reference to the hbase administration class.
      */
     private HBaseAdmin hbaseAdmin;
+
+    private Admin admin;
     /**
      * A reference to the tables factory class.
      */
@@ -84,13 +82,29 @@ public class Connection {
 
             this.factory = new TableFactory(config);
             this.hbaseAdmin = new HBaseAdmin(config);
+            //this.admin = ConnectionFactory.createConnection(config).getAdmin();
         } catch (Exception e) {
+            logger.error(e, "Failed to access hbase administration.");
             throw new IOException("Failed to access hbase administration.", e);
         }
     }
     //endregion
 
     //region Public Properties
+
+    /**
+     * Converts column family to column descriptor.
+     *
+     * @param families A list of column families to converters.
+     * @return A list of column descriptors.
+     */
+    private static Iterable<HColumnDescriptor> toDescriptors(Iterable<ColumnFamily> families) {
+        Collection<HColumnDescriptor> descriptors = new ArrayList<HColumnDescriptor>();
+        for (ColumnFamily family : families) {
+            descriptors.add(family.toDescriptor());
+        }
+        return descriptors;
+    }
 
     /**
      * Gets a reference to the {@link TableFactory} instance used by connection.
@@ -118,6 +132,9 @@ public class Connection {
     public ConnectionDetails getConnectionDetails() {
         return this.connectionDetails;
     }
+    //endregion
+
+    //region Public Methods
 
     /**
      * Gets the name of the hbase muster server.
@@ -127,9 +144,6 @@ public class Connection {
     public String getServerName() {
         return this.serverName;
     }
-    //endregion
-
-    //region Public Methods
 
     /**
      * Gets a descriptor for the specified table.
@@ -198,7 +212,7 @@ public class Connection {
      * @throws IOException Error accessing hbase.
      */
     public void createOrModifyTable(String tableName) throws IOException, TableNotFoundException {
-        createOrModifyTable(new TableDescriptor(tableName));
+        createOrModifyTable(new TableDescriptor(TableName.valueOf(tableName)));
     }
 
     /**
@@ -268,7 +282,7 @@ public class Connection {
 
         HTable table = this.factory.get(tableName);
 
-        byte[][] startKeys = table.getStartKeys();
+        byte[][] startKeys = table.getRegionLocator().getStartKeys();
         byte[][] splitKeys = new byte[startKeys.length - 1][];
 
         System.arraycopy(startKeys, 1, splitKeys, 0, startKeys.length - 1);
@@ -298,7 +312,8 @@ public class Connection {
     public void copyTable(TableDescriptor targetTable, TableDescriptor sourceTable, Connection sourceCluster) throws IOException, TableNotFoundException {
         HTable source = sourceCluster.factory.get(sourceTable.getName());
 
-        byte[][] startKeys = source.getStartKeys();
+        //byte[][] startKeys = source.getStartKeys();
+        byte[][] startKeys = source.getRegionLocator().getStartKeys();
         byte[][] splitKeys = new byte[startKeys.length - 1][];
 
         System.arraycopy(startKeys, 1, splitKeys, 0, startKeys.length - 1);
@@ -324,7 +339,7 @@ public class Connection {
                 isValid = result != null;
                 if (isValid) {
                     Put put = new Put(result.getRow());
-                    for (KeyValue kv : result.list()) {
+                    for (Cell kv : result.listCells()) {
                         put.add(kv);
                     }
 
@@ -408,7 +423,7 @@ public class Connection {
      * @throws InterruptedException
      */
     public void flushTable(String tableName) throws IOException, InterruptedException {
-        this.hbaseAdmin.flush(tableName);
+        this.hbaseAdmin.flush(TableName.valueOf(tableName));
     }
 
     /**
@@ -545,7 +560,7 @@ public class Connection {
                     byte[] column = Bytes.toBytesBinary(cell.getColumn().getName());
                     byte[] value = cell.getValueAsByteArray();
 
-                    put.add(family, column, value);
+                    put.addColumn(family, column, value);
                 }
             }
 
@@ -592,7 +607,9 @@ public class Connection {
                 byte[] column = Bytes.toBytesBinary(cell.getColumn().getName());
                 byte[] value = cell.getValueAsByteArray();
 
-                put.add(family, column, value);
+                logger.info("famliy=%s, column=%s, value=%s, valueAsBytes=%s", cell.getColumn().getFamily(), cell.getColumn().getName(), cell.getValue(), Arrays.toString(cell.getValueAsByteArray()));
+
+                put.addColumn(family, column, value);
             }
         }
 
@@ -665,6 +682,9 @@ public class Connection {
     public Scanner getScanner(String tableName) {
         return new Scanner(this, tableName);
     }
+    //endregion
+
+    //region Private Methods
 
     /**
      * Gets a query scanner for the specified table.
@@ -676,9 +696,6 @@ public class Connection {
     public QueryScanner getScanner(String tableName, Query query) {
         return new QueryScanner(this, tableName, query);
     }
-    //endregion
-
-    //region Private Methods
 
     /**
      * Adds column families to the specified table.
@@ -701,20 +718,6 @@ public class Connection {
         }
 
         this.hbaseAdmin.enableTable(tableName);
-    }
-
-    /**
-     * Converts column family to column descriptor.
-     *
-     * @param families A list of column families to converters.
-     * @return A list of column descriptors.
-     */
-    private static Iterable<HColumnDescriptor> toDescriptors(Iterable<ColumnFamily> families) {
-        Collection<HColumnDescriptor> descriptors = new ArrayList<HColumnDescriptor>();
-        for (ColumnFamily family : families) {
-            descriptors.add(family.toDescriptor());
-        }
-        return descriptors;
     }
     //endregion
 }
